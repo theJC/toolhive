@@ -37,7 +37,21 @@ type DynamicClientRegistrationRequest struct {
 	TokenEndpointAuthMethod string   `json:"token_endpoint_auth_method,omitempty"`
 	GrantTypes              []string `json:"grant_types,omitempty"`
 	ResponseTypes           []string `json:"response_types,omitempty"`
-	Scopes                  []string `json:"scope,omitempty"`
+	Scopes                  []string `json:"-"` // Handled by custom MarshalJSON
+	scopeString             string   // Internal field for JSON marshaling
+}
+
+// MarshalJSON customizes JSON marshaling to send scope as a space-separated string per RFC 7591
+func (r *DynamicClientRegistrationRequest) MarshalJSON() ([]byte, error) {
+	type Alias DynamicClientRegistrationRequest
+	aux := &struct {
+		Scope string `json:"scope,omitempty"`
+		*Alias
+	}{
+		Scope: strings.Join(r.Scopes, " "),
+		Alias: (*Alias)(r),
+	}
+	return json.Marshal(aux)
 }
 
 // NewDynamicClientRegistrationRequest creates a new dynamic client registration request
